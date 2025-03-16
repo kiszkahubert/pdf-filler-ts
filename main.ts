@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, StandardFonts } from 'pdf-lib';
 
 const filePath = 'test_files/04.csv';
 
@@ -17,16 +17,35 @@ function readAndProcessCSV(): Promise<string[][]> {
         });
     });
 }
+/**
+ * Top left corner of the table has coordinates (x,y) = (136,338)
+ * Bottom left corner of the table has coordinates (x,y) = (136,127)
+ * Up to the ETO column we need to increment x coordinate by 26
+ * Up to the ETO column we need to decrement y coordinate by 30
+ */
 
 async function fillPDF(rows: string[][]){
     const pdf = fs.readFileSync('test_files/fillpdf.pdf');
     const pdfDoc = await PDFDocument.load(pdf);
+    const courierFont = await pdfDoc.embedFont(StandardFonts.CourierBold);
     const page = pdfDoc.getPages()[0];
+    // page.drawText("1234",{
+    //     x: 136,
+    //     y: 338,
+    //     size: 10,
+    //     font: courierFont
+    // })
+    // page.drawText("1234",{
+    //     x: 136,
+    //     y: 308,
+    //     size: 10,
+    //     font: courierFont
+    // })
     for(let i=0; i<rows[0].length; i++){
         page.drawText(rows[0][i],{
-            x: 50,
-            y: 40,
-            size: 30
+            x: 136 + 26*i,
+            y: 338,
+            size: 10
         })
     }
     const pdfBytes = await pdfDoc.save()
