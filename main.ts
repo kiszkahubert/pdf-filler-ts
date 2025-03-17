@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 
-const filePath = 'test_files/01.csv';
+const filePath = 'test_files/04.csv';
 
 function readAndProcessCSV(): Promise<string[][]> {
     return new Promise((resolve, reject) => {
@@ -27,6 +27,7 @@ function readAndProcessCSV(): Promise<string[][]> {
  * First normal width box after two wide begins at (x,y) = (358,338) and following with x offset of 27
  * Offset Y between each box is 30 
  * For big name in Route table first pos is (x,y,size) = (34,351,16), offset y for following is 30
+ * Right page begins at (x,y) = (546,338)
  */
 
 async function fillPDF(rows: string[][]){
@@ -34,6 +35,9 @@ async function fillPDF(rows: string[][]){
     const pdfDoc = await PDFDocument.load(pdf);
     const courierFont = await pdfDoc.embedFont(StandardFonts.CourierBold);
     const page = pdfDoc.getPages()[0];
+
+    // LEFT PAGE
+    
     for(let j=0; j<8; j++){
         for(let i=0; i<rows[j].length; i++){
             const text = rows[j][i];
@@ -64,9 +68,8 @@ async function fillPDF(rows: string[][]){
     }
     for(let i=0; i<rows[8].length-2; i++){
         const text = rows[8][i];
-        const textWidth = courierFont.widthOfTextAtSize(text,18);
         page.drawText(text,{
-            x: 34 + (64.8-textWidth)/2,
+            x: 34,
             y: 351-30*i,
             size: 18,
             font: courierFont
@@ -87,6 +90,62 @@ async function fillPDF(rows: string[][]){
         size: 10,
         font: courierFont
     })
+
+    // RIGHT PAGE
+
+    for(let j=9; j<rows.length-2; j++){
+        for(let i=0; i<rows[j].length; i++){
+            const text = rows[j][i];
+            const textWidth = courierFont.widthOfTextAtSize(text,10);
+            if(i < 6){
+                page.drawText(text,{
+                    x: 546 + 26*i + (24-textWidth)/2,
+                    y: 338-30*(j%9),
+                    size: 10,
+                    font: courierFont
+                })
+            } else if(i == 6 || i == 7){
+                page.drawText(text,{
+                    x: 706 + 32*(i%6) + (24-textWidth)/2,
+                    y: 338-30*(j%9),
+                    size: 10,
+                    font: courierFont
+                })
+            } else{
+                page.drawText(text,{
+                    x: 768 + 27*(i%8) + (24-textWidth)/2,
+                    y: 338-30*(j%9),
+                    size: 10,
+                    font: courierFont
+                })
+            }
+        }
+    }
+    for(let i=0; i<rows[8].length-2; i++){
+        const text = rows[8][i];
+        const textWidth = courierFont.widthOfTextAtSize(text,18);
+        page.drawText(text,{
+            x: 444,
+            y: 351-30*i,
+            size: 18,
+            font: courierFont
+        })
+    }
+    const textWidth11 = courierFont.widthOfTextAtSize(rows[17][9],10);
+    const textWidth22 = courierFont.widthOfTextAtSize(rows[17][10],10);
+
+    page.drawText(rows[17][9],{
+        x: 624+ (24-textWidth11)/2,
+        y: 98,
+        size: 10,
+        font: courierFont
+    })
+    page.drawText(rows[17][10],{
+        x: 676 + (24-textWidth22)/2,
+        y: 98,
+        size: 10,
+        font: courierFont
+    })
     const pdfBytes = await pdfDoc.save()
     fs.writeFileSync('test_files/modified.pdf', pdfBytes);
 }
@@ -95,7 +154,18 @@ async function main() {
     try {
         const processedRows = await readAndProcessCSV();
         const cleanData = processedRows.map((row: string[]) =>
-            row.map((val: string) => val.replace(/[\ufeff\ufffe\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ''))
+            row.map((val: string) => 
+                val.replace(/[\ufeff\ufffe\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '')
+                    .replace(/[Łł]/g, 'L')
+                    .replace(/[Ąą]/g, 'A')
+                    .replace(/[Ćć]/g, 'C')
+                    .replace(/[Ęę]/g, 'E')
+                    .replace(/[Óó]/g, 'O')
+                    .replace(/[Śś]/g, 'S')
+                    .replace(/[Źź]/g, 'Z')
+                    .replace(/[Żż]/g, 'Z')
+                    .replace(/[Ńń]/g, 'N')
+            )
         );
         await fillPDF(cleanData);
     } catch (err) {
