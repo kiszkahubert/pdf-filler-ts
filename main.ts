@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 
-const filePath = 'test_files/04.csv';
+const filePath = 'test_files/01.csv';
 
 function readAndProcessCSV(): Promise<string[][]> {
     return new Promise((resolve, reject) => {
@@ -11,7 +11,7 @@ function readAndProcessCSV(): Promise<string[][]> {
                 return;
             }
             const cleanData = data.replace(/^\uffeff/, '')
-            const rows = cleanData.split('\n');
+            const rows = cleanData.split(/\r?\n/);
             const processedRows = rows.map(row => row.split(','));
             resolve(processedRows);
         });
@@ -22,6 +22,10 @@ function readAndProcessCSV(): Promise<string[][]> {
  * Bottom left corner of the table has coordinates (x,y) = (136,127)
  * Up to the ETO column we need to increment x coordinate by 26
  * Up to the ETO column we need to decrement y coordinate by 30
+ * Each char has a width of 6px
+ * First of two wide boxes begins at (x,y) = (296,338) with x offset 32
+ * First normal width box after two wide begins at (x,y) = (358,338) and following with x offset of 27
+ * Offset Y between each box is 30 
  */
 
 async function fillPDF(rows: string[][]){
@@ -29,24 +33,33 @@ async function fillPDF(rows: string[][]){
     const pdfDoc = await PDFDocument.load(pdf);
     const courierFont = await pdfDoc.embedFont(StandardFonts.CourierBold);
     const page = pdfDoc.getPages()[0];
-    // page.drawText("1234",{
-    //     x: 136,
-    //     y: 338,
-    //     size: 10,
-    //     font: courierFont
-    // })
-    // page.drawText("1234",{
-    //     x: 136,
-    //     y: 308,
-    //     size: 10,
-    //     font: courierFont
-    // })
     for(let i=0; i<rows[0].length; i++){
-        page.drawText(rows[0][i],{
-            x: 136 + 26*i,
-            y: 338,
-            size: 10
-        })
+        const text = rows[0][i];
+        const textWidth = courierFont.widthOfTextAtSize(text,10);
+        console.log(text);
+        if(i < 6){
+            page.drawText(rows[0][i],{
+                x: 136 + 26*i + (24-textWidth)/2,
+                y: 338,
+                size: 10,
+                font: courierFont
+            })
+        } else if(i == 6 || i == 7){
+            page.drawText(rows[0][i],{
+                x: 296 + 32*(i%6) + (24-textWidth)/2,
+                y: 338,
+                size: 10,
+                font: courierFont
+            })
+        } else{
+            console.log(i);
+            page.drawText(rows[0][i],{
+                x: 358 + 27*(i%8) + (24-textWidth)/2,
+                y: 338,
+                size: 10,
+                font: courierFont
+            })
+        }
     }
     const pdfBytes = await pdfDoc.save()
     fs.writeFileSync('test_files/modified.pdf', pdfBytes);
@@ -55,6 +68,7 @@ async function fillPDF(rows: string[][]){
 async function main() {
     try {
         const processedRows = await readAndProcessCSV();
+        console.log(processedRows);
         const cleanData = processedRows.map((row: string[]) =>
             row.map((val: string) => val.replace(/[\ufeff\ufffe\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ''))
         );
