@@ -65,7 +65,6 @@ async function fillPDF(rows: string[][]){
     for(let i=0; i<rows[8].length-2; i++){
         const text = rows[8][i];
         const textWidth = courierFont.widthOfTextAtSize(text,18);
-        console.log(text + " : " +textWidth);
         page.drawText(text,{
             x: 34 + (64.8-textWidth)/2,
             y: 351-30*i,
@@ -73,7 +72,21 @@ async function fillPDF(rows: string[][]){
             font: courierFont
         })
     }
+    const textWidth1 = courierFont.widthOfTextAtSize(rows[8][9],10);
+    const textWidth2 = courierFont.widthOfTextAtSize(rows[8][10],10);
 
+    page.drawText(rows[8][9],{
+        x: 214 + (24-textWidth1)/2,
+        y: 98,
+        size: 10,
+        font: courierFont
+    })
+    page.drawText(rows[8][10],{
+        x: 266 + (24-textWidth2)/2,
+        y: 98,
+        size: 10,
+        font: courierFont
+    })
     const pdfBytes = await pdfDoc.save()
     fs.writeFileSync('test_files/modified.pdf', pdfBytes);
 }
