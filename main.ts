@@ -26,6 +26,7 @@ function readAndProcessCSV(): Promise<string[][]> {
  * First of two wide boxes begins at (x,y) = (296,338) with x offset 32
  * First normal width box after two wide begins at (x,y) = (358,338) and following with x offset of 27
  * Offset Y between each box is 30 
+ * For big name in Route table first pos is (x,y,size) = (34,351,16), offset y for following is 30
  */
 
 async function fillPDF(rows: string[][]){
@@ -37,7 +38,6 @@ async function fillPDF(rows: string[][]){
         for(let i=0; i<rows[j].length; i++){
             const text = rows[j][i];
             const textWidth = courierFont.widthOfTextAtSize(text,10);
-            console.log(text);
             if(i < 6){
                 page.drawText(text,{
                     x: 136 + 26*i + (24-textWidth)/2,
@@ -62,6 +62,18 @@ async function fillPDF(rows: string[][]){
             }
         }
     }
+    for(let i=0; i<rows[8].length-2; i++){
+        const text = rows[8][i];
+        const textWidth = courierFont.widthOfTextAtSize(text,18);
+        console.log(text + " : " +textWidth);
+        page.drawText(text,{
+            x: 34 + (64.8-textWidth)/2,
+            y: 351-30*i,
+            size: 18,
+            font: courierFont
+        })
+    }
+
     const pdfBytes = await pdfDoc.save()
     fs.writeFileSync('test_files/modified.pdf', pdfBytes);
 }
@@ -69,7 +81,6 @@ async function fillPDF(rows: string[][]){
 async function main() {
     try {
         const processedRows = await readAndProcessCSV();
-        console.log(processedRows);
         const cleanData = processedRows.map((row: string[]) =>
             row.map((val: string) => val.replace(/[\ufeff\ufffe\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ''))
         );
