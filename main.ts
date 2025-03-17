@@ -33,32 +33,33 @@ async function fillPDF(rows: string[][]){
     const pdfDoc = await PDFDocument.load(pdf);
     const courierFont = await pdfDoc.embedFont(StandardFonts.CourierBold);
     const page = pdfDoc.getPages()[0];
-    for(let i=0; i<rows[0].length; i++){
-        const text = rows[0][i];
-        const textWidth = courierFont.widthOfTextAtSize(text,10);
-        console.log(text);
-        if(i < 6){
-            page.drawText(rows[0][i],{
-                x: 136 + 26*i + (24-textWidth)/2,
-                y: 338,
-                size: 10,
-                font: courierFont
-            })
-        } else if(i == 6 || i == 7){
-            page.drawText(rows[0][i],{
-                x: 296 + 32*(i%6) + (24-textWidth)/2,
-                y: 338,
-                size: 10,
-                font: courierFont
-            })
-        } else{
-            console.log(i);
-            page.drawText(rows[0][i],{
-                x: 358 + 27*(i%8) + (24-textWidth)/2,
-                y: 338,
-                size: 10,
-                font: courierFont
-            })
+    for(let j=0; j<8; j++){
+        for(let i=0; i<rows[j].length; i++){
+            const text = rows[j][i];
+            const textWidth = courierFont.widthOfTextAtSize(text,10);
+            console.log(text);
+            if(i < 6){
+                page.drawText(text,{
+                    x: 136 + 26*i + (24-textWidth)/2,
+                    y: 338-30*j,
+                    size: 10,
+                    font: courierFont
+                })
+            } else if(i == 6 || i == 7){
+                page.drawText(text,{
+                    x: 296 + 32*(i%6) + (24-textWidth)/2,
+                    y: 338-30*j,
+                    size: 10,
+                    font: courierFont
+                })
+            } else{
+                page.drawText(text,{
+                    x: 358 + 27*(i%8) + (24-textWidth)/2,
+                    y: 338-30*j,
+                    size: 10,
+                    font: courierFont
+                })
+            }
         }
     }
     const pdfBytes = await pdfDoc.save()
